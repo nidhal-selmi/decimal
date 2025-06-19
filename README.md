@@ -5,6 +5,8 @@ This project visualizes MBSE decisions using git commits. A small Express server
 ## Project structure
 
 - `server.js` – Express backend serving commit information and diagrams.
+  Also stores commit messages (Y-statements) in a SQLite database and exposes
+  a chatbot API powered by OpenAI.
 - `public/` – Static frontend assets
   - `index.html`
   - `app.js`
@@ -20,13 +22,17 @@ This project visualizes MBSE decisions using git commits. A small Express server
    ```
 3. Set the path to your MBSE git repository via the `REPO_PATH` environment variable or modify `server.js`.
 4. Place `plantuml.jar` in the project root (or specify a different location via `PLANTUML_JAR`).
-5. Start the server:
+5. Set your OpenAI API key via the `OPENAI_API_KEY` environment variable if you
+   want to use the chatbot endpoint.
+6. Start the server:
    ```sh
    npm start
    ```
-6. Open `http://localhost:3001` in your browser to view the application.
+7. Open `http://localhost:3001` in your browser to view the application.
 
 ## Notes
 
 - Diagrams are generated on demand and stored under the `diagrams/` directory.
 - This repository does not include the actual MBSE project. Configure `REPO_PATH` to point to your own repository containing PlantUML files.
+- Y-statements extracted from commit messages are stored in `ystatements.db` and
+  can be queried via the `/ask` endpoint when an OpenAI API key is provided.
