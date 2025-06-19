@@ -4,9 +4,30 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const sqlite3 = require('sqlite3').verbose();
+const { Configuration, OpenAIApi } = require('openai');
 
 const app = express();
 const port = process.env.PORT || 3001;
+
+// Parse JSON bodies
+app.use(express.json());
+
+// SQLite database for Y-statements
+const dbPath = path.join(__dirname, 'ystatements.db');
+const db = new sqlite3.Database(dbPath);
+
+db.serialize(() => {
+    db.run(`CREATE TABLE IF NOT EXISTS ystatements (
+        hash TEXT PRIMARY KEY,
+        message TEXT
+    )`);
+});
+
+// OpenAI client
+const openai = new OpenAIApi(new Configuration({
+    apiKey: process.env.OPENAI_API_KEY
+}));
 
 // Serve static frontend
 app.use(express.static(path.join(__dirname, 'public')));
@@ -72,6 +93,13 @@ app.get('/commits', async (req, res) => {
             commits.push(commit);
         });
 
+        // Save Y-statements to the database
+        const stmt = db.prepare('INSERT OR REPLACE INTO ystatements (hash, message) VALUES (?, ?)');
+        commits.forEach(c => {
+            stmt.run(c.hash, c.message);
+        });
+        stmt.finalize();
+
         console.log("Parsed Commits:", commits); // Debug parsed commits
         res.json(commits);
     } catch (error) {
@@ -136,6 +164,38 @@ app.get('/diagram/:commitHash', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});
+
+// Ask questions about stored Y-statements using OpenAI
+app.post('/ask', (req, res) => {
+    const { question } = req.body;
+    if (!question) {
+        res.status(400).json({ error: 'Question is required' });
+        return;
+    }
+
+    db.all('SELECT message FROM ystatements', async (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+
+        const context = rows.map(r => r.message).join('\n');
+        try {
+            const completion = await openai.createChatCompletion({
+                model: 'gpt-3.5-turbo',
+                messages: [
+                    { role: 'system', content: 'You answer questions about project Y-statements.' },
+                    { role: 'user', content: `${context}\n\nQuestion: ${question}` }
+                ]
+            });
+
+            const answer = completion.data.choices[0].message.content.trim();
+            res.json({ answer });
+        } catch (e) {
+            res.status(500).json({ error: e.message });
+        }
+    });
 });
 
 // Start server
