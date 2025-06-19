@@ -6,12 +6,23 @@ const path = require('path');
 const cors = require('cors');
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
+
+// Serve static frontend
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Root route serves the frontend
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // Paths
-const repoPath = 'C:/Users/Nidhal SELMI/Thesis/DrivetrainExample'; // Now linked to DeciMaLExample.git
-const diagramsDir = path.join(__dirname, 'diagrams'); // Store diagrams
-const plantUmlJar = path.join(__dirname, 'plantuml.jar'); // PlantUML JAR path
+// Repository containing the MBSE model and PlantUML diagrams
+const repoPath = process.env.REPO_PATH || path.join(__dirname, 'MBSE-Repo');
+// Directory where generated diagrams are stored
+const diagramsDir = path.join(__dirname, 'diagrams');
+// PlantUML JAR location
+const plantUmlJar = process.env.PLANTUML_JAR || path.join(__dirname, 'plantuml.jar');
 
 // Enable CORS for frontend access
 app.use(cors({
