@@ -1,0 +1,114 @@
+/* 📌 General Styles */
+body {
+  font-family: 'Lato', sans-serif;
+  margin: 0;
+  padding: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #f8f9fa;
+}
+/* 📌 Header */
+header {
+  width: 100%;
+  text-align: left ;
+  background-color: #0f122e;
+  color: white;
+  padding: 2px 0;
+  padding-left: 20px;
+}
+
+/* 📌 Diagram & Why-Statement Section */
+#diagram-container {
+  display: inline-flex;
+  width: 99%;
+  margin-top: 20px;
+  padding: 20px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+/* 📌 Diagram Viewer */
+#diagram-viewer {
+  width: 80vw;
+  height: 70vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+#diagram-viewer img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+/* 📌 Why-Statement Panel */
+#metadata-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 15vw;
+  margin-top: 20px;
+  padding: 20px;
+  background: rgb(236, 235, 235);
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+/* 📌 GitGraph Container */
+#graph-container {
+  padding: 5px;
+  border-radius: 5px;
+  background: rgb(236, 235, 235);
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+  width: 7vw;
+  padding-left: 1cm;
+  overflow: visible;
+}
+/* Navigation Button Layout */
+#navigation {
+  text-align: center;
+  display: flex;
+  margin-top: 10px;
+}
+.highlight {
+  background-color: rgb(47, 112, 156);
+  font-weight: bold;
+}
+/* Base Button Styles */
+a {
+  text-decoration: none;
+  display: inline-block;
+  padding: 6px 10px;
+  font-size: 18px;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+/* Hover Effect */
+a:hover {
+  background-color: #9ed4ed;
+  color: black;
+}
+
+/* Previous Button */
+.previous {
+  background-color: #ffffff;
+  color: black;
+}
+
+/* Next Button */
+.next {
+  background-color: #fcfcfc;
+  color: black;
+}
+
+/* Rounded Buttons */
+.round {
+  border-radius: 20%;
+  width: 40px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
