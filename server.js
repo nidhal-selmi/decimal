@@ -141,12 +141,20 @@ app.get('/diagram/:commitHash', async (req, res) => {
         await git.checkout([commitHash]); // Checkout the specified commit
 
         // Paths
-        const pumlFile = path.join(repoPath, 'DrivetrainDevelopment.plantuml'); // PlantUML file
+        const pumlFiles = fs.readdirSync(repoPath).filter(f => f.endsWith('.plantuml'));
+        if (pumlFiles.length === 0) {
+            res.status(404).json({ error: 'No PlantUML files found in this commit.' });
+            return;
+        }
+
+        const pumlFile = path.join(repoPath, pumlFiles[0]); // Use the first PlantUML file found
+        const baseName = path.parse(pumlFiles[0]).name;
+        const generatedFile = path.join(diagramsDir, `${baseName}.png`);
         const diagramFile = path.join(diagramsDir, `diagram-${commitHash}.png`); // Output diagram filename
 
         // Ensure the PlantUML file exists
         if (!fs.existsSync(pumlFile)) {
-            res.status(404).json({ error: 'DroneDevelopment.plantuml not found in this commit.' });
+            res.status(404).json({ error: `${pumlFiles[0]} not found in this commit.` });
             return;
         }
 
@@ -167,7 +175,6 @@ app.get('/diagram/:commitHash', async (req, res) => {
             }
 
             // **Rename the file to include the commit hash**
-            const generatedFile = path.join(diagramsDir, 'DrivetrainDevelopment.png');
             if (fs.existsSync(generatedFile)) {
                 fs.renameSync(generatedFile, diagramFile);
             } else {
