@@ -12,6 +12,12 @@ const graphContainer = document.getElementById("graph-container");
 const nextButton = document.getElementById("next-commit");
 const prevButton = document.getElementById("prev-commit");
 const changeRepoButton = document.getElementById("change-repo");
+const openChatBtn = document.getElementById("open-chat-btn");
+const closeChatBtn = document.getElementById("close-chat-btn");
+const chatPanel = document.getElementById("chatbot-panel");
+const chatMessages = document.getElementById("chat-messages");
+const chatInput = document.getElementById("chat-input");
+const chatSendBtn = document.getElementById("chat-send-btn");
 
 // Temporary in-memory storage for commits
 let commitsDatabase = [];
@@ -226,5 +232,72 @@ changeRepoButton.addEventListener("click", () => {
   repoForm.style.display = "block";
   diagramContainer.style.display = "none";
   changeRepoButton.style.display = "none";
+});
+
+// Chatbot interactions
+openChatBtn.addEventListener("click", () => {
+  chatPanel.classList.add("open");
+});
+closeChatBtn.addEventListener("click", () => {
+  chatPanel.classList.remove("open");
+});
+
+async function sendQuestion() {
+  const question = chatInput.value.trim();
+  if (!question) return;
+  const qDiv = document.createElement("div");
+  qDiv.textContent = question;
+  chatMessages.appendChild(qDiv);
+  chatInput.value = "";
+  const response = await fetch(`${API_BASE}/ask`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question })
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    const eDiv = document.createElement("div");
+    eDiv.textContent = `Error: ${err.error}`;
+    chatMessages.appendChild(eDiv);
+    return;
+  }
+  const data = await response.json();
+  if (!data.results || data.results.length === 0) {
+    const aDiv = document.createElement("div");
+    aDiv.textContent = "No matching decisions found.";
+    chatMessages.appendChild(aDiv);
+  } else {
+    data.results.forEach(r => {
+      const aDiv = document.createElement("div");
+      let highlighted = r.message;
+      const tokens = question.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+      tokens.forEach(t => {
+        const regex = new RegExp(`(${t})`, "gi");
+        highlighted = highlighted.replace(regex, '<span class="highlight">$1</span>');
+      });
+      const link = document.createElement("a");
+      link.href = "#";
+      link.textContent = "\u2192"; // arrow symbol
+      link.addEventListener("click", () => {
+        const idx = commitsDatabase.findIndex(c => c.hash === r.hash);
+        if (idx !== -1) {
+          currentCommitIndex = idx;
+          selectCommit(r.hash, commitsDatabase[idx].message);
+          renderGitGraph();
+          updateNavigationButtons();
+          chatPanel.classList.remove("open");
+        }
+      });
+      aDiv.innerHTML = highlighted + " ";
+      aDiv.appendChild(link);
+      chatMessages.appendChild(aDiv);
+    });
+  }
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+chatSendBtn.addEventListener("click", sendQuestion);
+chatInput.addEventListener("keypress", e => {
+  if (e.key === "Enter") sendQuestion();
 });
 

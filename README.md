@@ -36,4 +36,6 @@ This project visualizes MBSE decisions using git commits. A small Express server
 - Diagrams are generated on demand and stored under the `diagrams/` directory.
 - This repository does not include the actual MBSE project. Configure `REPO_PATH` to point to your own repository containing PlantUML files.
 - Y-statements extracted from commit messages are stored in `ystatements.db` and
-  can be queried via the `/ask` endpoint when an OpenAI API key is provided.
+  can be queried via the `/ask` endpoint. The frontend includes a side chat tab
+  that sends questions to this endpoint and links the answer to the relevant
+  commit.
