@@ -185,7 +185,25 @@ app.get('/diagram/:commitHash', async (req, res) => {
 
             // **Rename the file to include the commit hash**
             if (fs.existsSync(generatedFile)) {
-                fs.renameSync(generatedFile, diagramFile);
+                try {
+                    fs.renameSync(generatedFile, diagramFile);
+                } catch (renameError) {
+                    // Handle cases where the file is locked or on a different device
+                    if (renameError.code === 'EBUSY' || renameError.code === 'EXDEV') {
+                        try {
+                            fs.copyFileSync(generatedFile, diagramFile);
+                            fs.unlinkSync(generatedFile);
+                        } catch (copyError) {
+                            console.error(`Diagram generation failed during file move: ${copyError.message}`);
+                            res.status(500).json({ error: `Diagram generation failed: ${copyError.message}` });
+                            return;
+                        }
+                    } else {
+                        console.error(`Diagram generation failed during rename: ${renameError.message}`);
+                        res.status(500).json({ error: `Diagram generation failed: ${renameError.message}` });
+                        return;
+                    }
+                }
             } else {
                 console.error("Diagram generation failed: Output file not found.");
                 res.status(500).json({ error: "Diagram generation failed: Output file not found." });
