@@ -284,7 +284,7 @@ app.get('/diagram/:commitHash', async (req, res) => {
     }
 });
 
-// Simple keyword search over stored Y-statements
+// Keyword search powered by ChatGPT analysis
 app.post('/ask', (req, res) => {
     const { question } = req.body;
     if (!question) {
@@ -298,7 +298,7 @@ app.post('/ask', (req, res) => {
         .split(/\s+/)
         .filter(t => t.length > 2); // ignore very short words
 
-    db.all('SELECT rowid AS id, hash, message FROM ystatements', (err, rows) => {
+    db.all('SELECT rowid AS id, hash, message FROM ystatements', async (err, rows) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
@@ -315,7 +315,40 @@ app.post('/ask', (req, res) => {
             })
             .filter(Boolean);
 
-        res.json({ results });
+        // If no OpenAI API key is configured, just return the search results
+        if (!process.env.OPENAI_API_KEY) {
+            res.json({ results });
+            return;
+        }
+
+        try {
+            const context = results
+                .slice(0, 5)
+                .map(r => `Commit: ${r.hash}\nMessage: ${r.message}`)
+                .join('\n');
+
+            const messages = [
+                {
+                    role: 'system',
+                    content: 'You answer questions about MBSE decisions. Use the provided commit messages to form a concise answer and mention commit hashes when relevant.'
+                },
+                {
+                    role: 'user',
+                    content: `Question: ${question}\n\nCommit messages:\n${context}`
+                }
+            ];
+
+            const completion = await openai.chat.completions.create({
+                model: 'gpt-3.5-turbo',
+                messages
+            });
+
+            const answer = completion.choices[0].message.content.trim();
+            res.json({ answer, results });
+        } catch (e) {
+            console.error('OpenAI request failed:', e.message);
+            res.status(500).json({ error: e.message, results });
+        }
     });
 });
 

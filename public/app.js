@@ -262,6 +262,12 @@ async function sendQuestion() {
     return;
   }
   const data = await response.json();
+  if (data.answer) {
+    const answerDiv = document.createElement("div");
+    answerDiv.textContent = data.answer;
+    chatMessages.appendChild(answerDiv);
+  }
+
   if (!data.results || data.results.length === 0) {
     const aDiv = document.createElement("div");
     aDiv.textContent = "No matching decisions found.";
