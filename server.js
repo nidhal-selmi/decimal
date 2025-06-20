@@ -30,13 +30,7 @@ app.use(express.json());
 const dbPath = path.join(__dirname, 'ystatements.db');
 let db;
 
-function initializeDatabase() {
-    if (db) {
-        db.close();
-    }
-    if (fs.existsSync(dbPath)) {
-        fs.unlinkSync(dbPath);
-    }
+function createDatabase() {
     db = new sqlite3.Database(dbPath);
     db.serialize(() => {
         db.run(`CREATE TABLE IF NOT EXISTS ystatements (
@@ -44,6 +38,31 @@ function initializeDatabase() {
             message TEXT
         )`);
     });
+}
+
+function removeDatabaseFile() {
+    if (fs.existsSync(dbPath)) {
+        try {
+            fs.unlinkSync(dbPath);
+        } catch (err) {
+            console.error('Failed to delete existing database file:', err.message);
+        }
+    }
+}
+
+function initializeDatabase() {
+    if (db) {
+        db.close(err => {
+            if (err) {
+                console.error('Error closing database:', err.message);
+            }
+            removeDatabaseFile();
+            createDatabase();
+        });
+    } else {
+        removeDatabaseFile();
+        createDatabase();
+    }
 }
 
 initializeDatabase();
