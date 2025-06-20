@@ -35,7 +35,8 @@ function createDatabase() {
     db.serialize(() => {
         db.run(`CREATE TABLE IF NOT EXISTS ystatements (
             hash TEXT PRIMARY KEY,
-            message TEXT
+            message TEXT,
+            embedding TEXT
         )`);
     });
 }
@@ -71,6 +72,20 @@ initializeDatabase();
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
+
+function cosineSimilarity(a, b) {
+    if (!a || !b || a.length !== b.length) return -1;
+    let dot = 0;
+    let normA = 0;
+    let normB = 0;
+    for (let i = 0; i < a.length; i++) {
+        dot += a[i] * b[i];
+        normA += a[i] * a[i];
+        normB += b[i] * b[i];
+    }
+    if (normA === 0 || normB === 0) return -1;
+    return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
 
 // Serve static frontend
 app.use(express.static(path.join(__dirname, 'public')));
@@ -186,10 +201,24 @@ app.get('/commits', async (req, res) => {
             commits.push(commit);
         });
 
-        // Save Y-statements to the database
-        const stmt = db.prepare('INSERT OR REPLACE INTO ystatements (hash, message) VALUES (?, ?)');
-        commits.forEach(c => {
-            stmt.run(c.hash, c.message);
+        // Save Y-statements and embeddings to the database
+        let embeddings = [];
+        if (process.env.OPENAI_API_KEY) {
+            try {
+                const embedResp = await openai.embeddings.create({
+                    model: 'text-embedding-ada-002',
+                    input: commits.map(c => c.message)
+                });
+                embeddings = embedResp.data.map(d => d.embedding);
+            } catch (e) {
+                console.error('Embedding generation failed:', e.message);
+            }
+        }
+
+        const stmt = db.prepare('INSERT OR REPLACE INTO ystatements (hash, message, embedding) VALUES (?, ?, ?)');
+        commits.forEach((c, idx) => {
+            const emb = embeddings[idx] ? JSON.stringify(embeddings[idx]) : null;
+            stmt.run(c.hash, c.message, emb);
         });
         stmt.finalize();
 
@@ -292,30 +321,61 @@ app.post('/ask', (req, res) => {
         return;
     }
 
-    // Split question into tokens for naive search
+    // Split question into tokens for naive search (fallback)
     const tokens = question
         .toLowerCase()
         .split(/\s+/)
-        .filter(t => t.length > 2); // ignore very short words
+        .filter(t => t.length > 2);
 
-    db.all('SELECT rowid AS id, hash, message FROM ystatements', async (err, rows) => {
+    db.all('SELECT rowid AS id, hash, message, embedding FROM ystatements', async (err, rows) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
         }
 
-        const results = rows
-            .map(row => {
-                const lower = row.message.toLowerCase();
-                const matched = tokens.every(t => lower.includes(t));
-                if (!matched) return null;
-                const firstToken = tokens.find(t => lower.includes(t));
-                const index = lower.indexOf(firstToken);
-                return { hash: row.hash, message: row.message, index };
-            })
-            .filter(Boolean);
+        let results = [];
+        let useVector = false;
 
-        // If no OpenAI API key is configured, just return the search results
+        if (process.env.OPENAI_API_KEY) {
+            try {
+                const qEmbedResp = await openai.embeddings.create({
+                    model: 'text-embedding-ada-002',
+                    input: question
+                });
+                const qEmbedding = qEmbedResp.data[0].embedding;
+
+                results = rows
+                    .map(row => {
+                        if (!row.embedding) return null;
+                        const emb = JSON.parse(row.embedding);
+                        const similarity = cosineSimilarity(qEmbedding, emb);
+                        return { hash: row.hash, message: row.message, similarity };
+                    })
+                    .filter(Boolean)
+                    .sort((a, b) => b.similarity - a.similarity)
+                    .slice(0, 5);
+
+                useVector = results.length > 0;
+            } catch (e) {
+                console.error('Vector search failed:', e.message);
+            }
+        }
+
+        // Fallback to naive search if vector search is not available
+        if (!useVector) {
+            results = rows
+                .map(row => {
+                    const lower = row.message.toLowerCase();
+                    const matched = tokens.every(t => lower.includes(t));
+                    if (!matched) return null;
+                    const firstToken = tokens.find(t => lower.includes(t));
+                    const index = lower.indexOf(firstToken);
+                    return { hash: row.hash, message: row.message, index };
+                })
+                .filter(Boolean);
+        }
+
+        // If no OpenAI API key is configured, just return the results
         if (!process.env.OPENAI_API_KEY) {
             res.json({ results });
             return;
