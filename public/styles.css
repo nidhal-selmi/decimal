@@ -17,17 +17,23 @@ header {
   padding: 2px 0;
   padding-left: 20px;
 }
-
 /* 📌 Diagram & Why-Statement Section */
 #diagram-container {
-  display: inline-flex;
+  display: none;
   width: 99%;
   margin-top: 20px;
   padding: 20px;
   background: white;
   border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
+
+/* Repo Form */
+#repo-form {
+  margin-top: 20px;
+}
+
+
 /* 📌 Diagram Viewer */
 #diagram-viewer {
   width: 80vw;

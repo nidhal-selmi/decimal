@@ -3,6 +3,10 @@ const API_BASE = "http://localhost:3001";
 
 // DOM Elements
 const diagramImage = document.getElementById("diagram-image");
+const repoForm = document.getElementById("repo-form");
+const repoInput = document.getElementById("repo-input");
+const repoSubmit = document.getElementById("repo-submit");
+const diagramContainer = document.getElementById("diagram-container");
 const metadataContent = document.getElementById("metadata-content");
 const graphContainer = document.getElementById("graph-container");
 const nextButton = document.getElementById("next-commit");
@@ -166,10 +170,50 @@ function updateNavigationButtons() {
   prevButton.disabled = currentCommitIndex === 0;
   nextButton.disabled = currentCommitIndex === commitsDatabase.length - 1;
 }
+async function setRepository(repo) {
+  const response = await fetch(`${API_BASE}/repo`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ repo })
+  });
+  if (!response.ok) throw new Error("Failed to set repository");
+  return response.json();
+}
+
+function checkStoredRepo() {
+  const stored = localStorage.getItem("repoPath");
+  if (stored) {
+    setRepository(stored).then(() => {
+      repoForm.style.display = "none";
+      diagramContainer.style.display = "inline-flex";
+      initializeApp();
+    }).catch(() => {
+      repoForm.style.display = "block";
+    });
+  } else {
+    repoForm.style.display = "block";
+  }
+}
+
+repoSubmit.addEventListener("click", async () => {
+  const value = repoInput.value.trim();
+  if (!value) return;
+  try {
+    await setRepository(value);
+    localStorage.setItem("repoPath", value);
+    repoForm.style.display = "none";
+    diagramContainer.style.display = "inline-flex";
+    initializeApp();
+  } catch (e) {
+    alert("Failed to load repository: " + e.message);
+  }
+});
+
 
 // Initialize the application
-initializeApp();
+checkStoredRepo();
 
 // Add event listeners for navigation buttons
 nextButton.addEventListener("click", nextCommit);
 prevButton.addEventListener("click", prevCommit);
+

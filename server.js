@@ -39,7 +39,7 @@ app.get('/', (req, res) => {
 
 // Paths
 // Repository containing the MBSE model and PlantUML diagrams
-const repoPath = process.env.REPO_PATH || path.join(__dirname, 'MBSE-Repo');
+let repoPath = process.env.REPO_PATH || path.join(__dirname, 'MBSE-Repo');
 // Directory where generated diagrams are stored
 const diagramsDir = path.join(__dirname, 'diagrams');
 // PlantUML JAR location
@@ -47,11 +47,34 @@ const plantUmlJar = process.env.PLANTUML_JAR || path.join(__dirname, 'plantuml.j
 
 // Enable CORS for frontend access
 app.use(cors({
+
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type"]
 }));
 
+// Set repository path via API
+app.post("/repo", async (req, res) => {
+  const { repo } = req.body;
+  if (!repo) {
+    return res.status(400).json({ error: "repo is required" });
+  }
+  if (fs.existsSync(repo)) {
+    repoPath = repo;
+    return res.json({ repoPath });
+  }
+  const cloneDir = path.join(__dirname, "cloned-repo");
+  try {
+    if (fs.existsSync(cloneDir)) {
+      fs.rmSync(cloneDir, { recursive: true, force: true });
+    }
+    await simpleGit().clone(repo, cloneDir);
+    repoPath = cloneDir;
+    res.json({ repoPath });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 // Ensure diagrams directory exists
 if (!fs.existsSync(diagramsDir)) {
     fs.mkdirSync(diagramsDir, { recursive: true });
