@@ -264,43 +264,44 @@ async function sendQuestion() {
   const data = await response.json();
   if (data.answer) {
     const answerDiv = document.createElement("div");
-    answerDiv.textContent = data.answer;
+    answerDiv.innerHTML = linkifyCommits(data.answer, data.results || []);
     chatMessages.appendChild(answerDiv);
-  }
-
-  if (!data.results || data.results.length === 0) {
+  } else {
     const aDiv = document.createElement("div");
     aDiv.textContent = "No matching decisions found.";
     chatMessages.appendChild(aDiv);
-  } else {
-    data.results.forEach(r => {
-      const aDiv = document.createElement("div");
-      let highlighted = r.message;
-      const tokens = question.toLowerCase().split(/\s+/).filter(t => t.length > 2);
-      tokens.forEach(t => {
-        const regex = new RegExp(`(${t})`, "gi");
-        highlighted = highlighted.replace(regex, '<span class="highlight">$1</span>');
-      });
-      const link = document.createElement("a");
-      link.href = "#";
-      link.textContent = "\u2192"; // arrow symbol
-      link.addEventListener("click", () => {
-        const idx = commitsDatabase.findIndex(c => c.hash === r.hash);
-        if (idx !== -1) {
-          currentCommitIndex = idx;
-          selectCommit(r.hash, commitsDatabase[idx].message);
-          renderGitGraph();
-          updateNavigationButtons();
-          chatPanel.classList.remove("open");
-        }
-      });
-      aDiv.innerHTML = highlighted + " ";
-      aDiv.appendChild(link);
-      chatMessages.appendChild(aDiv);
-    });
   }
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
+
+function linkifyCommits(text, results) {
+  let hashes = (results || []).map(r => r.hash);
+  if (hashes.length === 0) {
+    const regex = /\b[0-9a-f]{7,40}\b/g;
+    hashes = text.match(regex) || [];
+  }
+  hashes.forEach(h => {
+    const re = new RegExp(`(commit\s+)?${h}`, 'g');
+    const link = `<a href="#" class="commit-link" data-hash="${h}">$&</a>`;
+    text = text.replace(re, link);
+  });
+  return text;
+}
+
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('commit-link')) {
+    e.preventDefault();
+    const hash = e.target.getAttribute('data-hash');
+    const idx = commitsDatabase.findIndex(c => c.hash === hash);
+    if (idx !== -1) {
+      currentCommitIndex = idx;
+      selectCommit(hash, commitsDatabase[idx].message);
+      renderGitGraph();
+      updateNavigationButtons();
+      chatPanel.classList.remove("open");
+    }
+  }
+});
 
 chatSendBtn.addEventListener("click", sendQuestion);
 chatInput.addEventListener("keypress", e => {

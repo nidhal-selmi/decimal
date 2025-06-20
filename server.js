@@ -390,7 +390,7 @@ app.post('/ask', (req, res) => {
             const messages = [
                 {
                     role: 'system',
-                    content: 'You answer questions about MBSE decisions. Use the provided commit messages to form a concise answer and mention commit hashes when relevant.'
+                    content: 'You answer questions about MBSE decisions. Use the provided commit messages to form a short summary. Mention relevant commits using the phrase "commit <hash>" and do not repeat the full commit messages.'
                 },
                 {
                     role: 'user',
