@@ -11,6 +11,7 @@ const metadataContent = document.getElementById("metadata-content");
 const graphContainer = document.getElementById("graph-container");
 const nextButton = document.getElementById("next-commit");
 const prevButton = document.getElementById("prev-commit");
+const changeRepoButton = document.getElementById("change-repo");
 
 // Temporary in-memory storage for commits
 let commitsDatabase = [];
@@ -186,12 +187,15 @@ function checkStoredRepo() {
     setRepository(stored).then(() => {
       repoForm.style.display = "none";
       diagramContainer.style.display = "inline-flex";
+      changeRepoButton.style.display = "inline";
       initializeApp();
     }).catch(() => {
       repoForm.style.display = "block";
+      changeRepoButton.style.display = "none";
     });
   } else {
     repoForm.style.display = "block";
+    changeRepoButton.style.display = "none";
   }
 }
 
@@ -203,6 +207,7 @@ repoSubmit.addEventListener("click", async () => {
     localStorage.setItem("repoPath", value);
     repoForm.style.display = "none";
     diagramContainer.style.display = "inline-flex";
+    changeRepoButton.style.display = "inline";
     initializeApp();
   } catch (e) {
     alert("Failed to load repository: " + e.message);
@@ -216,4 +221,10 @@ checkStoredRepo();
 // Add event listeners for navigation buttons
 nextButton.addEventListener("click", nextCommit);
 prevButton.addEventListener("click", prevCommit);
+changeRepoButton.addEventListener("click", () => {
+  localStorage.removeItem("repoPath");
+  repoForm.style.display = "block";
+  diagramContainer.style.display = "none";
+  changeRepoButton.style.display = "none";
+});
 

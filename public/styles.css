@@ -118,3 +118,8 @@ a:hover {
   justify-content: center;
 }
 
+/* Change repo button */
+#change-repo {
+  margin-left: 20px;
+}
+
