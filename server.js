@@ -15,14 +15,25 @@ app.use(express.json());
 
 // SQLite database for Y-statements
 const dbPath = path.join(__dirname, 'ystatements.db');
-const db = new sqlite3.Database(dbPath);
+let db;
 
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS ystatements (
-        hash TEXT PRIMARY KEY,
-        message TEXT
-    )`);
-});
+function initializeDatabase() {
+    if (db) {
+        db.close();
+    }
+    if (fs.existsSync(dbPath)) {
+        fs.unlinkSync(dbPath);
+    }
+    db = new sqlite3.Database(dbPath);
+    db.serialize(() => {
+        db.run(`CREATE TABLE IF NOT EXISTS ystatements (
+            hash TEXT PRIMARY KEY,
+            message TEXT
+        )`);
+    });
+}
+
+initializeDatabase();
 
 // OpenAI client
 const openai = new OpenAI({
@@ -71,6 +82,7 @@ app.post("/repo", async (req, res) => {
   }
   if (fs.existsSync(repo)) {
     repoPath = repo;
+    initializeDatabase();
     return res.json({ repoPath });
   }
   try {
@@ -79,6 +91,7 @@ app.post("/repo", async (req, res) => {
     }
     await simpleGit().clone(repo, cloneDir);
     repoPath = cloneDir;
+    initializeDatabase();
     res.json({ repoPath });
   } catch (e) {
     res.status(500).json({ error: e.message });
