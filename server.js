@@ -7,6 +7,19 @@ const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const { OpenAI } = require('openai');
 
+// Load OpenAI API key from key.txt if present
+const keyFile = path.join(__dirname, 'key.txt');
+if (fs.existsSync(keyFile)) {
+    try {
+        const key = fs.readFileSync(keyFile, 'utf8').trim();
+        if (key) {
+            process.env.OPENAI_API_KEY = key;
+        }
+    } catch (err) {
+        console.error('Failed to read key.txt:', err.message);
+    }
+}
+
 const app = express();
 const port = process.env.PORT || 3001;
 
