@@ -42,8 +42,18 @@ app.get('/', (req, res) => {
 let repoPath = process.env.REPO_PATH || path.join(__dirname, 'MBSE-Repo');
 // Directory where generated diagrams are stored
 const diagramsDir = path.join(__dirname, 'diagrams');
+// Directory where remote repositories are cloned
+const cloneDir = path.join(__dirname, 'cloned-repo');
 // PlantUML JAR location
 const plantUmlJar = process.env.PLANTUML_JAR || path.join(__dirname, 'plantuml.jar');
+
+// Clean previously cloned repository and generated diagrams on startup
+if (fs.existsSync(cloneDir)) {
+    fs.rmSync(cloneDir, { recursive: true, force: true });
+}
+if (fs.existsSync(diagramsDir)) {
+    fs.rmSync(diagramsDir, { recursive: true, force: true });
+}
 
 // Enable CORS for frontend access
 app.use(cors({
@@ -63,7 +73,6 @@ app.post("/repo", async (req, res) => {
     repoPath = repo;
     return res.json({ repoPath });
   }
-  const cloneDir = path.join(__dirname, "cloned-repo");
   try {
     if (fs.existsSync(cloneDir)) {
       fs.rmSync(cloneDir, { recursive: true, force: true });
