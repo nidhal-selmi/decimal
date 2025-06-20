@@ -55,8 +55,8 @@ async function initializeApp() {
     }
     commitsDatabase = await response.json();
 
-    // Reverse the commit order so that the initial commit (with no parents) is first
-    commitsDatabase.reverse();
+    // Commits are returned from newest to oldest; keep this order so the latest
+    // commit is shown first
 
     if (!Array.isArray(commitsDatabase) || commitsDatabase.length === 0) {
       throw new Error("No valid commit data received.");

@@ -114,6 +114,11 @@ app.post("/repo", async (req, res) => {
   }
   if (fs.existsSync(repo)) {
     repoPath = repo;
+    try {
+      await simpleGit(repoPath).fetch();
+    } catch (err) {
+      console.error('Failed to fetch repository:', err.message);
+    }
     initializeDatabase();
     return res.json({ repoPath });
   }
@@ -123,6 +128,11 @@ app.post("/repo", async (req, res) => {
     }
     await simpleGit().clone(repo, cloneDir);
     repoPath = cloneDir;
+    try {
+      await simpleGit(repoPath).fetch();
+    } catch (err) {
+      console.error('Failed to fetch repository:', err.message);
+    }
     initializeDatabase();
     res.json({ repoPath });
   } catch (e) {
@@ -138,6 +148,12 @@ if (!fs.existsSync(diagramsDir)) {
 app.get('/commits', async (req, res) => {
     try {
         const git = simpleGit(repoPath);
+        // Ensure we have the latest commits from the repository
+        try {
+            await git.fetch();
+        } catch (err) {
+            console.error('Failed to fetch repository:', err.message);
+        }
         const logData = await git.raw([
             "log", "--all", "--graph", "--pretty=format:%h|%p|%s"
         ]);
