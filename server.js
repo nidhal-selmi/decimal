@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
-const { Configuration, OpenAIApi } = require('openai');
+const { OpenAI } = require('openai');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -25,9 +25,9 @@ db.serialize(() => {
 });
 
 // OpenAI client
-const openai = new OpenAIApi(new Configuration({
+const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
-}));
+});
 
 // Serve static frontend
 app.use(express.static(path.join(__dirname, 'public')));
@@ -205,7 +205,7 @@ app.post('/ask', (req, res) => {
 
         const context = rows.map(r => r.message).join('\n');
         try {
-            const completion = await openai.createChatCompletion({
+            const completion = await openai.chat.completions.create({
                 model: 'gpt-3.5-turbo',
                 messages: [
                     { role: 'system', content: 'You answer questions about project Y-statements.' },
@@ -213,7 +213,7 @@ app.post('/ask', (req, res) => {
                 ]
             });
 
-            const answer = completion.data.choices[0].message.content.trim();
+            const answer = completion.choices[0].message.content.trim();
             res.json({ answer });
         } catch (e) {
             res.status(500).json({ error: e.message });
