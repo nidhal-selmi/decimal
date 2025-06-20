@@ -284,7 +284,7 @@ app.get('/diagram/:commitHash', async (req, res) => {
     }
 });
 
-// Ask questions about stored Y-statements using OpenAI
+// Simple keyword search over stored Y-statements
 app.post('/ask', (req, res) => {
     const { question } = req.body;
     if (!question) {
@@ -292,27 +292,30 @@ app.post('/ask', (req, res) => {
         return;
     }
 
-    db.all('SELECT message FROM ystatements', async (err, rows) => {
+    // Split question into tokens for naive search
+    const tokens = question
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(t => t.length > 2); // ignore very short words
+
+    db.all('SELECT rowid AS id, hash, message FROM ystatements', (err, rows) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
         }
 
-        const context = rows.map(r => r.message).join('\n');
-        try {
-            const completion = await openai.chat.completions.create({
-                model: 'gpt-3.5-turbo',
-                messages: [
-                    { role: 'system', content: 'You answer questions about project Y-statements.' },
-                    { role: 'user', content: `${context}\n\nQuestion: ${question}` }
-                ]
-            });
+        const results = rows
+            .map(row => {
+                const lower = row.message.toLowerCase();
+                const matched = tokens.every(t => lower.includes(t));
+                if (!matched) return null;
+                const firstToken = tokens.find(t => lower.includes(t));
+                const index = lower.indexOf(firstToken);
+                return { hash: row.hash, message: row.message, index };
+            })
+            .filter(Boolean);
 
-            const answer = completion.choices[0].message.content.trim();
-            res.json({ answer });
-        } catch (e) {
-            res.status(500).json({ error: e.message });
-        }
+        res.json({ results });
     });
 });
 
