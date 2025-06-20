@@ -321,11 +321,15 @@ app.post('/ask', (req, res) => {
         return;
     }
 
-    // Split question into tokens for naive search (fallback)
-    const tokens = question
-        .toLowerCase()
-        .split(/\s+/)
-        .filter(t => t.length > 2);
+    // Prepare regular expression from the question
+    let regex;
+    try {
+        regex = new RegExp(question, 'i');
+    } catch (e) {
+        // Escape special characters if the regex is invalid
+        const esc = question.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        regex = new RegExp(esc, 'i');
+    }
 
     db.all('SELECT rowid AS id, hash, message, embedding FROM ystatements', async (err, rows) => {
         if (err) {
@@ -361,54 +365,22 @@ app.post('/ask', (req, res) => {
             }
         }
 
-        // Fallback to naive search if vector search is not available
+        // Fallback to regular expression search if vector search is not available
         if (!useVector) {
             results = rows
                 .map(row => {
-                    const lower = row.message.toLowerCase();
-                    const matched = tokens.every(t => lower.includes(t));
-                    if (!matched) return null;
-                    const firstToken = tokens.find(t => lower.includes(t));
-                    const index = lower.indexOf(firstToken);
-                    return { hash: row.hash, message: row.message, index };
+                    if (regex.test(row.message)) {
+                        return { hash: row.hash, message: row.message };
+                    }
+                    return null;
                 })
                 .filter(Boolean);
         }
 
-        // If no OpenAI API key is configured, just return the results
-        if (!process.env.OPENAI_API_KEY) {
-            res.json({ results });
-            return;
-        }
-
-        try {
-            const context = results
-                .slice(0, 5)
-                .map(r => `Commit: ${r.hash}\nMessage: ${r.message}`)
-                .join('\n');
-
-            const messages = [
-                {
-                    role: 'system',
-                    content: 'You answer questions about MBSE decisions. Use the provided commit messages to form a short summary. Mention relevant commits using the phrase "commit <hash>" and do not repeat the full commit messages.'
-                },
-                {
-                    role: 'user',
-                    content: `Question: ${question}\n\nCommit messages:\n${context}`
-                }
-            ];
-
-            const completion = await openai.chat.completions.create({
-                model: 'gpt-3.5-turbo',
-                messages
-            });
-
-            const answer = completion.choices[0].message.content.trim();
-            res.json({ answer, results });
-        } catch (e) {
-            console.error('OpenAI request failed:', e.message);
-            res.status(500).json({ error: e.message, results });
-        }
+        const answer = results.length > 0
+            ? `Found ${results.length} matching commit(s).`
+            : 'No matching commits found.';
+        res.json({ answer, results });
     });
 });
 
