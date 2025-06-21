@@ -4,45 +4,47 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Airbus DeciMaL - Decision Management Lab</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" />
   <link rel="stylesheet" href="styles.css" />
   <!-- Load GitGraph UMD build -->
   <script src="https://cdn.jsdelivr.net/npm/@gitgraph/js"></script>
 
 </head>
 <body>
-  <!-- Header -->
-  <header>
-    <div class="title-group">
-      <h2>Airbus DeciMaL</h2>
-      <span class="tagline">Decision Management Lab</span>
+  <!-- Navigation -->
+  <nav class="navbar navbar-dark bg-dark px-3">
+    <div class="navbar-brand d-flex flex-column">
+      <span class="h5 mb-0">Airbus DeciMaL</span>
+      <small class="tagline">Decision Management Lab</small>
     </div>
-    <button id="change-repo" style="display:none;">Change Repository</button>
-  </header>
-  <div id="repo-form">
-    <input id="repo-input" type="text" placeholder="Repository path or URL" />
-    <button id="repo-submit">Load Repository</button>
+    <button id="change-repo" class="btn btn-outline-light ms-auto" style="display:none;">Change Repository</button>
+  </nav>
+
+  <div id="repo-form" class="container my-4 d-flex gap-2">
+    <input id="repo-input" class="form-control" type="text" placeholder="Repository path or URL" />
+    <button id="repo-submit" class="btn btn-primary">Load Repository</button>
   </div>
 
 
-  <!-- Container for Diagram & Y-statement -->
-  <div id="diagram-container">
-    <!-- Container where the commit tree will be rendered -->
-    <div id="graph-container"></div>
-    <div id="diagram-viewer">
-      <img id="diagram-image" src="" alt="Select a commit to view its diagram" />
-    </div>
-    <div id="metadata-panel">
-      <div id="navigation">
-        <a href="#" id="prev-commit" class="previous round">&#8249;</a>
-        <a href="#" id="next-commit" class="next round">&#8250;</a>
+  <!-- Diagram & decision panel -->
+  <div id="diagram-container" class="container" style="display:none;">
+    <div class="row g-3">
+      <div class="col-md-2" id="graph-container"></div>
+      <div class="col-md-8 d-flex justify-content-center" id="diagram-viewer">
+        <img id="diagram-image" src="" class="img-fluid" alt="Select a commit to view its diagram" />
       </div>
-      <!-- This will be dynamically populated from the backend commits -->
-      <p id="metadata-content"></p>
+      <div class="col-md-2" id="metadata-panel">
+        <div id="navigation" class="btn-group mb-3" role="group">
+          <button class="btn btn-secondary" id="prev-commit">&#8249;</button>
+          <button class="btn btn-secondary" id="next-commit">&#8250;</button>
+        </div>
+        <p id="metadata-content" class="mb-0"></p>
+      </div>
     </div>
   </div>
 
   <!-- Chatbot side panel -->
-  <button id="open-chat-btn">Chat</button>
+  <button id="open-chat-btn" class="btn btn-primary">Chat</button>
   <div id="chatbot-panel" class="chat-closed">
     <div id="chatbot-header">
       <span>Decision Chatbot</span>
@@ -55,6 +57,8 @@
     </div>
   </div>
 
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Load our custom JS code -->
   <script src="app.js"></script>
 </body>

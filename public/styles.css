@@ -12,7 +12,7 @@ body {
   color: #ffffff;
 }
 /* 📌 Header */
-header {
+nav.navbar {
   width: 100%;
   display: flex;
   align-items: center;
@@ -22,10 +22,6 @@ header {
   padding: 15px 20px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
-.title-group {
-  display: flex;
-  flex-direction: column;
-}
 .tagline {
   font-size: 14px;
   opacity: 0.8;
@@ -33,8 +29,7 @@ header {
 }
 /* 📌 Diagram & Why-Statement Section */
 #diagram-container {
-  display: none;
-  width: 95%;
+  width: 100%;
   margin-top: 30px;
   padding: 25px;
   background: rgba(255, 255, 255, 0.1);
@@ -46,32 +41,14 @@ header {
 /* Repo Form */
 #repo-form {
   margin-top: 40px;
-  display: flex;
-  gap: 10px;
 }
 #repo-input {
-  padding: 8px 12px;
-  border-radius: 4px;
-  border: none;
   min-width: 300px;
-}
-#repo-submit {
-  padding: 8px 20px;
-  background: #1d2f6f;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-#repo-submit:hover {
-  background: #2b68f0;
 }
 
 
 /* 📌 Diagram Viewer */
 #diagram-viewer {
-  width: 80vw;
   height: 70vh;
   display: flex;
   justify-content: center;
@@ -91,7 +68,6 @@ header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 15vw;
   margin-top: 20px;
   padding: 20px;
   background: rgba(255, 255, 255, 0.08);
@@ -114,61 +90,13 @@ header {
 #navigation {
   text-align: center;
   display: flex;
+  gap: 0.5rem;
   margin-top: 10px;
-}
-.highlight {
-  background-color: rgb(47, 112, 156);
-  font-weight: bold;
-}
-/* Base Button Styles */
-a {
-  text-decoration: none;
-  display: inline-block;
-  padding: 6px 12px;
-  font-size: 18px;
-  font-weight: bold;
-  border-radius: 4px;
-  background: #1d2f6f;
-  color: #fff;
-  transition: background 0.3s;
-}
-
-/* Hover Effect */
-a:hover {
-  background: #2b68f0;
-  color: #fff;
-}
-
-/* Previous Button */
-.previous,
-.next {
-  background: #1d2f6f;
-  color: #fff;
-}
-
-/* Rounded Buttons */
-.round {
-  border-radius: 20%;
-  width: 40px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* Change repo button */
 #change-repo {
   margin-left: 20px;
-  padding: 6px 14px;
-  background: #1d2f6f;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-#change-repo:hover {
-  background: #2b68f0;
 }
 
 /* Chatbot panel */
