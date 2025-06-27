@@ -5,20 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
-const { OpenAI } = require('openai');
-
-// Load OpenAI API key from key.txt if present
-const keyFile = path.join(__dirname, 'key.txt');
-if (fs.existsSync(keyFile)) {
-    try {
-        const key = fs.readFileSync(keyFile, 'utf8').trim();
-        if (key) {
-            process.env.OPENAI_API_KEY = key;
-        }
-    } catch (err) {
-        console.error('Failed to read key.txt:', err.message);
-    }
-}
+// No external API usage
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -35,8 +22,7 @@ function createDatabase() {
     db.serialize(() => {
         db.run(`CREATE TABLE IF NOT EXISTS ystatements (
             hash TEXT PRIMARY KEY,
-            message TEXT,
-            embedding TEXT
+            message TEXT
         )`);
     });
 }
@@ -68,24 +54,7 @@ function initializeDatabase() {
 
 initializeDatabase();
 
-// OpenAI client
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
 
-function cosineSimilarity(a, b) {
-    if (!a || !b || a.length !== b.length) return -1;
-    let dot = 0;
-    let normA = 0;
-    let normB = 0;
-    for (let i = 0; i < a.length; i++) {
-        dot += a[i] * b[i];
-        normA += a[i] * a[i];
-        normB += b[i] * b[i];
-    }
-    if (normA === 0 || normB === 0) return -1;
-    return dot / (Math.sqrt(normA) * Math.sqrt(normB));
-}
 
 // Serve static frontend
 app.use(express.static(path.join(__dirname, 'public')));
@@ -201,24 +170,10 @@ app.get('/commits', async (req, res) => {
             commits.push(commit);
         });
 
-        // Save Y-statements and embeddings to the database
-        let embeddings = [];
-        if (process.env.OPENAI_API_KEY) {
-            try {
-                const embedResp = await openai.embeddings.create({
-                    model: 'text-embedding-ada-002',
-                    input: commits.map(c => c.message)
-                });
-                embeddings = embedResp.data.map(d => d.embedding);
-            } catch (e) {
-                console.error('Embedding generation failed:', e.message);
-            }
-        }
-
-        const stmt = db.prepare('INSERT OR REPLACE INTO ystatements (hash, message, embedding) VALUES (?, ?, ?)');
-        commits.forEach((c, idx) => {
-            const emb = embeddings[idx] ? JSON.stringify(embeddings[idx]) : null;
-            stmt.run(c.hash, c.message, emb);
+        // Save Y-statements to the database
+        const stmt = db.prepare('INSERT OR REPLACE INTO ystatements (hash, message) VALUES (?, ?)');
+        commits.forEach(c => {
+            stmt.run(c.hash, c.message);
         });
         stmt.finalize();
 
@@ -313,7 +268,7 @@ app.get('/diagram/:commitHash', async (req, res) => {
     }
 });
 
-// Keyword search powered by ChatGPT analysis
+// Simple question matcher for decision queries
 app.post('/ask', (req, res) => {
     const { question } = req.body;
     if (!question) {
@@ -321,65 +276,43 @@ app.post('/ask', (req, res) => {
         return;
     }
 
-    // Prepare regular expression from the question
-    let regex;
-    try {
-        regex = new RegExp(question, 'i');
-    } catch (e) {
-        // Escape special characters if the regex is invalid
-        const esc = question.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        regex = new RegExp(esc, 'i');
+    // Supported question patterns
+    const patterns = [
+        { regex: /in (?:which|what) decision[^?]*goal(?: is)? ([^?]+)\?/i },
+        { regex: /which decision[^?]*led to ([^?]+)\?/i },
+        { regex: /what alternatives(?: does| did)? decision ([^?]+) have\?/i }
+    ];
+
+    let term = question;
+    for (const p of patterns) {
+        const m = question.match(p.regex);
+        if (m) {
+            term = m[1];
+            break;
+        }
     }
 
-    db.all('SELECT rowid AS id, hash, message, embedding FROM ystatements', async (err, rows) => {
+    const esc = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(esc, 'i');
+
+    db.all('SELECT rowid AS id, hash, message FROM ystatements', async (err, rows) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
         }
 
-        let results = [];
-        let useVector = false;
-
-        if (process.env.OPENAI_API_KEY) {
-            try {
-                const qEmbedResp = await openai.embeddings.create({
-                    model: 'text-embedding-ada-002',
-                    input: question
-                });
-                const qEmbedding = qEmbedResp.data[0].embedding;
-
-                results = rows
-                    .map(row => {
-                        if (!row.embedding) return null;
-                        const emb = JSON.parse(row.embedding);
-                        const similarity = cosineSimilarity(qEmbedding, emb);
-                        return { hash: row.hash, message: row.message, similarity };
-                    })
-                    .filter(Boolean)
-                    .sort((a, b) => b.similarity - a.similarity)
-                    .slice(0, 5);
-
-                useVector = results.length > 0;
-            } catch (e) {
-                console.error('Vector search failed:', e.message);
-            }
-        }
-
-        // Fallback to regular expression search if vector search is not available
-        if (!useVector) {
-            results = rows
-                .map(row => {
-                    if (regex.test(row.message)) {
-                        return { hash: row.hash, message: row.message };
-                    }
-                    return null;
-                })
-                .filter(Boolean);
-        }
+        let results = rows
+            .map(row => {
+                if (regex.test(row.message)) {
+                    return { hash: row.hash, message: row.message };
+                }
+                return null;
+            })
+            .filter(Boolean);
 
         const answer = results.length > 0
-            ? `Found ${results.length} matching commit(s).`
-            : 'No matching commits found.';
+            ? `Found ${results.length} matching decision(s).`
+            : 'No matching decisions found.';
         res.json({ answer, results });
     });
 });
