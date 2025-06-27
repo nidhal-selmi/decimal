@@ -234,7 +234,7 @@ changeRepoButton.addEventListener("click", () => {
   changeRepoButton.style.display = "none";
 });
 
-// Chatbot interactions
+// Query interactions
 openChatBtn.addEventListener("click", () => {
   chatPanel.classList.add("open");
 });
