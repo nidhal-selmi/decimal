@@ -278,9 +278,19 @@ app.post('/ask', (req, res) => {
 
     // Supported question patterns
     const patterns = [
-        { regex: /in (?:which|what) decision[^?]*goal(?: is)? ([^?]+)\?/i },
-        { regex: /which decision[^?]*led to ([^?]+)\?/i },
-        { regex: /what alternatives(?: does| did)? decision ([^?]+) have\?/i }
+        // Goal-oriented questions
+        { regex: /in (?:which|what) decision[^?]*goal(?: is| was| to| of)? ([^?]+)\?/i },
+        { regex: /what is the goal of decision ([^?]+)\?/i },
+
+        // Consequence questions
+        { regex: /which decision[^?]*(?:led|leads|resulted|results) to ([^?]+)\?/i },
+
+        // Alternatives for a decision
+        { regex: /what alternatives(?: does| did)? decision ([^?]+) have\?/i },
+        { regex: /what (?:were|are) the alternatives(?: for| to)? decision ([^?]+)\?/i },
+
+        // Motivation
+        { regex: /why was decision ([^?]+) made\?/i },
     ];
 
     let term = question;

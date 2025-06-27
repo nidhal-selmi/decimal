@@ -35,3 +35,16 @@ This project visualizes MBSE decisions using git commits. A small Express server
 - Y-statements extracted from commit messages are stored in `ystatements.db`.
   The `/ask` endpoint searches commit messages with predefined question
   patterns and regular expressions, returning matching commits to the frontend.
+
+## Query examples
+
+The question matcher understands a small set of patterns. Some supported
+examples are:
+
+- "In which decision is the goal to reduce weight?"
+- "Which decision led to using carbon materials?"
+- "What alternatives did decision D3 have?"
+- "What is the goal of decision D5?"
+- "Why was decision D8 made?"
+
+Minor wording variations (e.g. "goal was" or "goal to") are tolerated.
