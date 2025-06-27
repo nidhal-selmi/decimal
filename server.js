@@ -291,6 +291,10 @@ app.post('/ask', (req, res) => {
 
         // Motivation
         { regex: /why was decision ([^?]+) made\?/i },
+=======
+        { regex: /in (?:which|what) decision[^?]*goal(?: is)? ([^?]+)\?/i },
+        { regex: /which decision[^?]*led to ([^?]+)\?/i },
+        { regex: /what alternatives(?: does| did)? decision ([^?]+) have\?/i }
     ];
 
     let term = question;
